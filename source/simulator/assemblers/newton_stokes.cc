@@ -350,7 +350,7 @@ namespace aspect
         }
 
 #if DEBUG
-      if (assemble_newton_stokes_matrix)
+      if (scratch.rebuild_newton_stokes_matrix)
         {
           if (this->get_newton_handler().get_Newton_stabilisation().second == "SPD")
             {
