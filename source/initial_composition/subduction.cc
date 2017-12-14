@@ -117,14 +117,14 @@ namespace aspect
 	composition = 1;
 	}
       }else if((z<=Height_to_surface||b_Use_sticky_air==false)&&(z>=(slab_lower_crust_elevation)&&x<Initial_subduction_point||(z<upper_slab_cutoff&&z>=lower_slab_cutoff&&z<crust_thinning_in_mantle&&x>=lower_crust_rotation_point&&z>=right_slab_cutoff)||(z>=slab_lower_crust_elevation-Radius_smoothing_cricle+Radius_smoothing_cricle*cos(Slab_dip_rad)&&z<slab_lower_crust_elevation&&x>=circle_common_part&&x<circle_common_part+Radius_smoothing_cricle*sin(Slab_dip_rad)&&(pow(x-(circle_common_part),2)+pow((z-(slab_lower_crust_elevation-Radius_smoothing_cricle)),2)>=pow(Radius_smoothing_cricle,2))&&(z<upper_slab_cutoff)))){ // slab plate crust
-	if(n_comp==1){
+	if(n_comp==0){
 	composition = 1;
 	}
       }else if(z>=upper_slab_cutoff&&z>=Height_to_surface-Crustal_thickness_overriding_plate){ // overriding plate crust
-	if(n_comp==2){
+	if(n_comp==1){
 	composition = 1;
 	}
-      }else if(n_comp==0){ // mantle
+      }else if(n_comp==2){ // mantle
 	composition = 1;
       }else{ // not the right composition
 	composition = 0;
@@ -316,6 +316,11 @@ namespace aspect
       return composition;
     }
 
+    
+    
+    
+    
+    
     template <int dim>
     void
     Subduction<dim>::declare_parameters (ParameterHandler &prm)
@@ -371,13 +376,16 @@ namespace aspect
       prm.leave_subsection();
       prm.enter_subsection("Material model");
        {
-        prm.enter_subsection("Stokesloop model");
+        prm.enter_subsection("Visco Plastic");  // Stokesloop model
         {
 	  prm.enter_subsection("Weakzones");
 	  { 
 	     prm.declare_entry ("Number of weakzones", "0",
                           Patterns::Integer (0),
                           "The number of weakzones that in the model");
+	     prm.declare_entry ("List of change composition to", "0",
+	    		 	 	  Patterns::List (Patterns::Integer(0)),
+	    		 	 	  "A list in which the composition is changed");
 	     prm.declare_entry ("List of existance times", "",
                           Patterns::List (Patterns::Double(0)),
                           "A list of how long the weakzone should exist in seconds.");
@@ -442,7 +450,7 @@ namespace aspect
       // current point the SimulatorAccess hasn't been initialized
       // yet. so get it from the parameter file directly.
       prm.enter_subsection ("Compositional fields");
-      const unsigned int n_compositional_fields = prm.get_integer ("Number of fields");
+      const unsigned int n_compositional_fields = prm.get_integer ("Number of fields");  //ompositional_fields
       prm.leave_subsection ();
 
       prm.enter_subsection("Initial composition model");
@@ -472,7 +480,7 @@ namespace aspect
       
       prm.enter_subsection("Material model");
        {
-        prm.enter_subsection("Stokesloop model");
+        prm.enter_subsection("Visco Plastic");  //Stokesloop model
         {
       /// do stuff for weakzones
       prm.enter_subsection("Weakzones");
@@ -516,16 +524,16 @@ namespace aspect
           
 	  
           std::vector<std::string> n_wkz_beginpoints_outer = Utilities::split_string_list(prm.get ("List of beginpoints"));
-	  int size_element = n_wkz_beginpoints_outer.size();
+	  int size_element = n_wkz_beginpoints_outer.size(); 
 	  wkz_beginpoints.resize(size_element,std::vector<double>(dim,0));
 	  for ( unsigned int it1 = 0; it1 != n_wkz_beginpoints_outer.size(); ++it1 )
 	  {
 	    std::vector<double> n_wkz_beginpoints_inner = Utilities::string_to_double(Utilities::split_string_list(n_wkz_beginpoints_outer[it1],':'));
 	  if(dim==2){
 	    std::vector<double> tmpPoint(dim,0);
-            tmpPoint[0] = n_wkz_beginpoints_inner[0];
+        tmpPoint[0] = n_wkz_beginpoints_inner[0];
 	    tmpPoint[1] = n_wkz_beginpoints_inner[1];
-            wkz_beginpoints[it1] = tmpPoint;
+	    wkz_beginpoints[it1] = tmpPoint;
 	    //std::cout << "end: " << wkz_beginpoints[0][0] << "," << wkz_beginpoints[0][1] << "; " << wkz_beginpoints[1][0] << "," << wkz_beginpoints[1][1] << "; " << wkz_beginpoints[2][0] << "," << wkz_beginpoints[2][1] << std::endl;
 	  }else if(dim==3){
 	    std::vector<double> tmpPoint(dim,0);
@@ -586,6 +594,7 @@ namespace aspect
                                                       (Utilities::split_string_list(prm.get ("List of upper boundary")));
           wkz_upperboundary = std::vector<double> (n_wkz_upperboundary.begin(),
                                                          n_wkz_upperboundary.end());
+          //std::cout << "wkz_upper[0]=" << wkz_upperboundary[0] << std::endl;
           AssertThrow (wkz_upperboundary.size() == wkz_n_zones,
                        ExcMessage("Invalid input parameter file: Wrong number of entries in List of upper boundary"));
 	  
@@ -597,7 +606,8 @@ namespace aspect
                                                          n_wkz_lowerboundary.end());
           AssertThrow (wkz_lowerboundary.size() == wkz_n_zones,
                        ExcMessage("Invalid input parameter file: Wrong number of entries in List of lower boundary"));
-	  
+	
+          
 	  }
       }
       prm.leave_subsection (); 
