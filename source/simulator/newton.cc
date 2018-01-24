@@ -161,6 +161,23 @@ namespace aspect
   {
     newton_derivative_scaling_factor = set_newton_derivative_scaling_factor;
   }
+
+  template <int dim>
+  std::pair<std::string,std::string>
+  NewtonHandler<dim>::
+  get_Newton_stabilisation() const
+  {
+    return Newton_stabilisation;
+  }
+
+
+  template <int dim>
+  void
+  NewtonHandler<dim>::
+  set_Newton_stabilisation(const std::string use_Newton_stabilisation_preconditioner,const std::string use_Newton_stabilisation_A_block)
+  {
+    Newton_stabilisation = std::make_pair(use_Newton_stabilisation_preconditioner,use_Newton_stabilisation_A_block);
+  }
 }
 
 

@@ -105,6 +105,17 @@ namespace aspect
        */
       void set_newton_derivative_scaling_factor(const double newton_derivative_scaling_factor);
 
+      /**
+       * Gets the Newton derivative scaling factor used for scaling the
+       * derivative part of the Newton Stokes solver in the assembly.
+       */
+      std::pair<std::string,std::string> get_Newton_stabilisation() const;
+
+      /**
+       * Sets the Newton derivative scaling factor used for scaling the
+       * derivative part of the Newton Stokes solver in the assembly.
+       */
+      void set_Newton_stabilisation(const std::string use_Newton_stabilisation_preconditioner,const std::string use_Newton_stabilisation_A_block);
 
     private:
       /**
@@ -115,6 +126,7 @@ namespace aspect
        * explanation of the purpose of this factor.
        */
       double newton_derivative_scaling_factor;
+      std::pair<std::string,std::string> Newton_stabilisation;
   };
 
   namespace Assemblers
