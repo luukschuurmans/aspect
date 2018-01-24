@@ -682,31 +682,41 @@ namespace aspect
         current_constraints.set_zero (linearized_stokes_initial_guess);
         linearized_stokes_initial_guess.block (block_p) /= pressure_scaling;
 
-        // (ab)use the distributed solution vector to temporarily put a residual in
-        // (we don't care about the residual vector -- all we care about is the
-        // value (number) of the initial residual). The initial residual is returned
-        // to the caller (for nonlinear computations).
-        initial_residual = stokes_block.residual (distributed_stokes_solution,
-                                                  linearized_stokes_initial_guess,
-                                                  system_rhs);
+        double solver_tolerance = 0;
+        if (!assemble_newton_stokes_system)
+          {
+            // (ab)use the distributed solution vector to temporarily put a residual in
+            // (we don't care about the residual vector -- all we care about is the
+            // value (number) of the initial residual). The initial residual is returned
+            // to the caller (for nonlinear computations).
+            initial_residual = stokes_block.residual (distributed_stokes_solution,
+                                                      linearized_stokes_initial_guess,
+                                                      system_rhs);
 
-        // Note: the residual is computed with a zero velocity, effectively computing
-        // || B^T p - g ||, which we are going to use for our solver tolerance.
-        // We do not use the current velocity for the initial residual because
-        // this would not decrease the number of iterations if we had a better
-        // initial guess (say using a smaller timestep). But we need to use
-        // the pressure instead of only using the norm of the rhs, because we
-        // are only interested in the part of the rhs not balanced by the static
-        // pressure (the current pressure is a good approximation for the static
-        // pressure).
-        const double residual_u = system_matrix.block(0,1).residual (distributed_stokes_solution.block(0),
-                                                                     linearized_stokes_initial_guess.block(1),
-                                                                     system_rhs.block(0));
-        const double residual_p = system_rhs.block(1).l2_norm();
+            // Note: the residual is computed with a zero velocity, effectively computing
+            // || B^T p - g ||, which we are going to use for our solver tolerance.
+            // We do not use the current velocity for the initial residual because
+            // this would not decrease the number of iterations if we had a better
+            // initial guess (say using a smaller timestep). But we need to use
+            // the pressure instead of only using the norm of the rhs, because we
+            // are only interested in the part of the rhs not balanced by the static
+            // pressure (the current pressure is a good approximation for the static
+            // pressure).
+            const double residual_u = system_matrix.block(0,1).residual (distributed_stokes_solution.block(0),
+                                                                         linearized_stokes_initial_guess.block(1),
+                                                                         system_rhs.block(0));
+            const double residual_p = system_rhs.block(1).l2_norm();
 
-        const double solver_tolerance = parameters.linear_stokes_solver_tolerance *
-                                        sqrt(residual_u*residual_u+residual_p*residual_p);
-
+            solver_tolerance = parameters.linear_stokes_solver_tolerance *
+                               sqrt(residual_u*residual_u+residual_p*residual_p);
+          }
+        else
+          {
+            const double residual_u = system_rhs.block(0).l2_norm();
+            const double residual_p = system_rhs.block(1).l2_norm();
+            solver_tolerance = parameters.linear_stokes_solver_tolerance *
+                               sqrt(residual_u*residual_u+residual_p*residual_p);
+          }
         // Now overwrite the solution vector again with the current best guess
         // to solve the linear system
         distributed_stokes_solution = linearized_stokes_initial_guess;
@@ -853,6 +863,12 @@ namespace aspect
                                    solver_control_cheap,
                                    solver_control_expensive);
 
+        // We do not need the linearized_stokes_initial_guess vectory anymore, so
+        // (ab)use it for computing the initial residual when the Newton solver is used
+        if (assemble_newton_stokes_system)
+          initial_residual = stokes_block.residual (linearized_stokes_initial_guess,
+                                                    distributed_stokes_solution,
+                                                    system_rhs);
         // distribute hanging node and
         // other constraints
         current_constraints.distribute (distributed_stokes_solution);
