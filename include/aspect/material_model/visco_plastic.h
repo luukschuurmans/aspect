@@ -167,6 +167,7 @@ namespace aspect
         std::vector<double> thermal_diffusivities;
         std::vector<double> heat_capacities;
 
+        
         /**
          * Enumeration for selecting which viscosity averaging scheme to use.
          * Select between harmonic, arithmetic, geometric, and
@@ -247,7 +248,12 @@ namespace aspect
 
         std::vector<double> angles_internal_friction;
         std::vector<double> cohesions;
+        std::vector<double> nu_plastic;
         std::vector<double> exponents_stress_limiter;
+        
+        std::vector<double> nu_diff;
+        std::vector<double> nu_disl;
+        std::vector<double> nu_comp;
 
     };
 

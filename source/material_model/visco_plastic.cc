@@ -202,19 +202,19 @@ namespace aspect
           // Note: values of A, d, m, E, V and n are distinct for diffusion & dislocation creep
 
           // Diffusion creep: viscosity is grain size dependent (m!=0) and strain-rate independent (n=1)
-          double viscosity_diffusion = 0.5 * std::pow(prefactors_diffusion[j],-1/stress_exponents_diffusion[j]) *
+          double viscosity_diffusion = 0.5 * (1.0/nu_diff[j]) * std::pow(prefactors_diffusion[j],-1/stress_exponents_diffusion[j]) *
                                        std::exp((activation_energies_diffusion[j] + pressure*activation_volumes_diffusion[j])/
                                                 (constants::gas_constant*temperature*stress_exponents_diffusion[j])) *
                                        std::pow(grain_size, grain_size_exponents_diffusion[j]);
 
           // For dislocation creep, viscosity is grain size independent (m=0) and strain-rate dependent (n>1)
-          double viscosity_dislocation = 0.5 * std::pow(prefactors_dislocation[j],-1/stress_exponents_dislocation[j]) *
+          double viscosity_dislocation = 0.5 * (1.0/nu_disl[j]) * std::pow(prefactors_dislocation[j],-1/stress_exponents_dislocation[j]) *
                                          std::exp((activation_energies_dislocation[j] + pressure*activation_volumes_dislocation[j])/
                                                   (constants::gas_constant*temperature*stress_exponents_dislocation[j])) *
                                          std::pow(edot_ii,((1. - stress_exponents_dislocation[j])/stress_exponents_dislocation[j]));
 
           // Composite viscosity
-          double viscosity_composite = (viscosity_diffusion * viscosity_dislocation)/(viscosity_diffusion + viscosity_dislocation);
+          double viscosity_composite = (viscosity_diffusion * viscosity_dislocation)/(viscosity_diffusion + viscosity_dislocation)*(1.0/nu_comp[j]);
 
           // Select what form of viscosity to use (diffusion, dislocation or composite)
           double viscosity_pre_yield = 0.0;
@@ -288,7 +288,7 @@ namespace aspect
           double viscosity_drucker_prager;
           if ( viscous_stress >= yield_strength  )
             {
-              viscosity_drucker_prager = yield_strength / (2.0 * edot_ii);
+              viscosity_drucker_prager = yield_strength / (2.0 * edot_ii) * (1.0/nu_plastic[j]);
             }
           else
             {
@@ -837,6 +837,10 @@ namespace aspect
                              "for a total of N+1 values, where N is the number of compositional fields. "
                              "The extremely large default cohesion value (1e20 Pa) prevents the viscous stress from "
                              "exceeding the yield stress. Units: $Pa$.");
+          prm.declare_entry ("Nu plastic", "1.0",
+                             Patterns::List(Patterns::Double(0)),
+                             "List of plastic nu prefactor, which gives the weakening factor for that type of deformation. If composite is used, nu_diff/nu_disl should be 1.0, Units: none.");
+          
 
           // Stress limiter parameters
           prm.declare_entry ("Stress limiter exponents", "1.0",
@@ -846,7 +850,18 @@ namespace aspect
                              "for a total of N+1 values, where N is the number of compositional fields. "
                              "The default value of 1 ensures the entire stress limiter term is set to 1 "
                              "and does not affect the viscosity. Units: none.");
-
+          
+          prm.declare_entry ("Nu dislocation", "1.0",
+                             Patterns::List(Patterns::Double(0)),
+                             "List of dislocation nu prefactors, which gives the weakening factor for that type of deformation, Units: none.");
+          
+          prm.declare_entry ("Nu diffusion", "1.0",
+                             Patterns::List(Patterns::Double(0)),
+                             "List of diffusion nu prefactors, which gives the weakening factor for that type of deformation, Units: none.");
+         
+          prm.declare_entry ("Nu composite", "1.0",
+                             Patterns::List(Patterns::Double(0)),
+                             "List of composite nu prefactors, which gives the weakening factor for that type of deformation. If composite is used, nu_diff/nu_disl should be 1.0, Units: none.");
         }
         prm.leave_subsection();
       }
@@ -990,6 +1005,10 @@ namespace aspect
           angles_internal_friction = Utilities::possibly_extend_from_1_to_N (Utilities::string_to_double(Utilities::split_string_list(prm.get("Angles of internal friction"))),
                                                                              n_fields,
                                                                              "Angles of internal friction");
+          nu_plastic = Utilities::possibly_extend_from_1_to_N (Utilities::string_to_double(Utilities::split_string_list(prm.get("Nu plastic"))),
+                                                                                       n_fields,
+                                                                                       "Nu plastic");
+          
           // Convert angles from degrees to radians
           for (unsigned int i = 0; i<n_fields; ++i)
             angles_internal_friction[i] *= numbers::PI/180.0;
@@ -1000,6 +1019,17 @@ namespace aspect
           exponents_stress_limiter  = Utilities::possibly_extend_from_1_to_N (Utilities::string_to_double(Utilities::split_string_list(prm.get("Stress limiter exponents"))),
                                                                               n_fields,
                                                                               "Stress limiter exponents");
+          nu_disl = Utilities::possibly_extend_from_1_to_N (Utilities::string_to_double(Utilities::split_string_list(prm.get("Nu dislocation"))),
+                  	  	  	  	  	  	  	  	  	  	    n_fields,
+                  	  	  	  	  	  	  	  	  	  	    "Nu dislocation");
+        		  
+          nu_diff = Utilities::possibly_extend_from_1_to_N (Utilities::string_to_double(Utilities::split_string_list(prm.get("Nu diffusion"))),
+                  	  	  	  	  	  	  	  	  	  	  	n_fields,
+                  	  	  	  	  	  	  	  	  	  	  	"Nu diffusion");
+          nu_comp = Utilities::possibly_extend_from_1_to_N (Utilities::string_to_double(Utilities::split_string_list(prm.get("Nu composite"))),
+                  	  	  	  	  	  	  	  	  	  	  	n_fields,
+                  	  	  	  	  	  	  	  	  	  	  	"Nu composite");        
+          
         }
         prm.leave_subsection();
       }
