@@ -117,17 +117,21 @@ namespace aspect
 	composition = 1;
 	}
       }else if((z<=Height_to_surface||b_Use_sticky_air==false)&&(z>=(slab_lower_crust_elevation)&&x<Initial_subduction_point||(z<upper_slab_cutoff&&z>=lower_slab_cutoff&&z<crust_thinning_in_mantle&&x>=lower_crust_rotation_point&&z>=right_slab_cutoff)||(z>=slab_lower_crust_elevation-Radius_smoothing_cricle+Radius_smoothing_cricle*cos(Slab_dip_rad)&&z<slab_lower_crust_elevation&&x>=circle_common_part&&x<circle_common_part+Radius_smoothing_cricle*sin(Slab_dip_rad)&&(pow(x-(circle_common_part),2)+pow((z-(slab_lower_crust_elevation-Radius_smoothing_cricle)),2)>=pow(Radius_smoothing_cricle,2))&&(z<upper_slab_cutoff)))){ // slab plate crust
-	if(n_comp==0){
-	composition = 1;
+	    if(n_comp==0){
+	    composition = 1;
 	}
+      }else if(z>=upper_slab_cutoff&&z>=Height_to_surface-Crustal_thickness_overriding_plate&&x<=(Initial_subduction_point+Lithospheric_thickness_overriding_plate/tan(Slab_dip_rad))||z>=Height_to_surface-Crustal_thickness_overriding_plate&&z>=Height_to_surface-tan(45)*(Initial_subduction_point+Continent_width-x)&&x>Initial_subduction_point+Lithospheric_thickness_overriding_plate/tan(Slab_dip_rad)){ // overriding plate crust
+      	if(n_comp==5){
+      	composition = 1;
+    }
       }else if(z>=upper_slab_cutoff&&z>=Height_to_surface-Crustal_thickness_overriding_plate){ // overriding plate crust
-	if(n_comp==1){
-	composition = 1;
+	   if(n_comp==1){
+	   composition = 1;
 	}
       }else if(n_comp==2){ // mantle
-	composition = 1;
+	   composition = 1;
       }else{ // not the right composition
-	composition = 0;
+	   composition = 0;
       }
       //debug!
       //composition=InternalPosition[0];
@@ -361,6 +365,9 @@ namespace aspect
           prm.declare_entry ("Crustal thickness overriding plate", "5e3", ///lcr3 -> Crustal_thickness_overriding_plate
                              Patterns::Double (0),
                              "The thickness of the crust of the overring plate in meters.");
+          prm.declare_entry ("Width of continental block", "200e3",
+                                       Patterns::Double (0),
+                             "The width of the continental block of with high viscosity in meters.");
           prm.declare_entry ("Lithospheric thickness overriding plate", "100e3", /// Lithospheric_thickness_overriding_plate-> Lithospheric_thickness_overriding_plate
                              Patterns::Double (0),
                              "The thickness of the complete lithosphere in meters. Check if it can be removed");
@@ -468,7 +475,8 @@ namespace aspect
          //Lithospheric_thickness_subducting_plate = 	prm.get_double ("Lithospheric thickness subducting plate"); /// l
          Crustal_thickness_overriding_plate = 		prm.get_double ("Crustal thickness overriding plate"); /// lcr3
          Lithospheric_thickness_overriding_plate = 	prm.get_double ("Lithospheric thickness overriding plate"); /// Lithospheric_thickness_overriding_plate
-	 Radius_smoothing_cricle =		 	prm.get_double ("Radius smoothing cricle"); /// r
+         Radius_smoothing_cricle =		 	prm.get_double ("Radius smoothing cricle"); /// r
+         Continent_width =					prm.get_double ("Width of continental block");
 	 
 	  //function.reset (new Functions::ParsedFunction<dim>(n_compositional_fields));
           //function->parse_parameters (prm);

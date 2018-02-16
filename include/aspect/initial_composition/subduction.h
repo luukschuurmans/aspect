@@ -91,6 +91,7 @@ namespace aspect
         double Crustal_thickness_overriding_plate; 	/// lcr3/lc3cr
         double Lithospheric_thickness_overriding_plate; /// lc3
 	double Radius_smoothing_cricle; 		/// r
+	double Continent_width;
 	
 	unsigned int                   wkz_n_zones;
         std::vector<double>            wkz_composition;
